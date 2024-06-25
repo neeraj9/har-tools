@@ -19,6 +19,15 @@ import sys
 
 
 # ----------------------------------------------------------------------------
+# Setup non-standard mime-types
+# ----------------------------------------------------------------------------
+
+# these mimetypes are non-standard, but used at various places
+
+# usually its image/jpeg, see mimetypes.types_map for all known types
+mimetypes.add_type("image/jpg", ".jpg")
+
+# ----------------------------------------------------------------------------
 # Generic functions
 # ----------------------------------------------------------------------------
 
@@ -57,7 +66,7 @@ def split_bytes_by_boundary(data: bytes, boundary: bytes) -> list[bytes]:
 
 
 # ----------------------------------------------------------------------------
-# multipart functions
+# multipart functions 
 # ----------------------------------------------------------------------------
 
 def decode_content(content: bytes, base64_encoded=False) -> bytes:
