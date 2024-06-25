@@ -179,7 +179,8 @@ def filter_entries(entries_obj, filter_func=None):
 
 
 def process_har_file(filename):
-    jsonobject = json.loads(open(filename, "r").read())
+    # default file format for .har is set to utf-8, to support them
+    jsonobject = json.loads(open(filename, "r", encoding="utf-8").read())
     log_obj = jsonobject.get("log", {})
     entries_obj = log_obj.get("entries", {})
     extract_filtered_multipart_data(entries_obj)
