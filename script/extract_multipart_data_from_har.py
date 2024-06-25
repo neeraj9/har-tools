@@ -123,6 +123,8 @@ def extract_multipart_data(decoded_data: bytes, boundary: bytes) -> bool:
         if result:
             (header, raw_data) = result
             extension = mimetypes.guess_extension(header.get("content-type", ""))
+            if not extension:
+                extension = ".unknown"
             count += 1
             filename = f"file-{count}{extension}"
             for (key, value) in parse_content_disposition(header.get("content-disposition", "")):
