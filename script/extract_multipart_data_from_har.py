@@ -128,7 +128,7 @@ def extract_multipart_data(decoded_data: bytes, boundary: bytes, index: int) -> 
             count += 1
             filename = f"{index}_file-{count}{extension}"
             for (key, value) in parse_content_disposition(header.get("content-disposition", "")):
-                if key == "name":
+                if key.strip().lower() == "name":
                     filename = f"{index}_{replace_non_alphanumeric(value)}{extension}"
                     break
             if not os.path.exists(filename):
@@ -198,8 +198,8 @@ def extract_filtered_multipart_data(entries_obj: dict) -> None:
     for (index, key, value) in filter_entries(entries_obj, filter_fun):
         content_type = ""
         for header in value.get("headers", []):
-            if header["name"] == "content-type":
-                content_type = header["value"]
+            if header.get("name", "").strip().lower() == "content-type":
+                content_type = header.get("value", "")
                 break
         boundary = content_type.split(";")[-1].strip().split("=")[-1].strip()
         content = value.get("content", {})
@@ -217,8 +217,8 @@ def extract_filtered_multipart_data(entries_obj: dict) -> None:
 
 def filter_for_multipart_mixed_response(value: dict) -> str:
     for header in value.get("headers", []):
-        if header["name"] == "content-type":
-            return header["value"].startswith("multipart/mixed;")
+        if header.get("name", "").strip().lower() == "content-type":
+            return header.get("value", "").startswith("multipart/mixed;")
 
 
 # ----------------------------------------------------------------------------
