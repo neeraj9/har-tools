@@ -4,7 +4,7 @@
 # https://opensource.org/licenses/MIT
 
 
-from har_util import (
+from util import (
     split_bytes_by_boundary,
     replace_non_alphanumeric,
     base64_decode_content,
@@ -59,13 +59,14 @@ def parse_content_disposition(content_disposition: str) -> Generator[tuple[str, 
             yield (key, value)
 
 
-def extract_multipart_data(decoded_data: bytes, boundary: bytes, index: int) -> bool:
+def extract_multipart_data(decoded_data: bytes, boundary: bytes, index: int) -> Generator[tuple[str, bytes, str], None, None]:
     count = 0
     for part in split_bytes_by_boundary(decoded_data, boundary):
         result = parse_part(part)
         if result:
             (header, raw_data) = result
-            extension = guess_extension(header.get("content-type", ""))
+            content_type = header.get("content-type", "")
+            extension = guess_extension(content_type)
             if not extension:
                 extension = ".unknown"
             count += 1
@@ -74,20 +75,14 @@ def extract_multipart_data(decoded_data: bytes, boundary: bytes, index: int) -> 
                 if key.strip().lower() == "name":
                     filename = f"{index}_{replace_non_alphanumeric(value)}{extension}"
                     break
-            if not os.path.exists(filename):
-                open(filename, "wb").write(raw_data)
-                print(f"Writing filename = {filename}")
-            else:
-                print(f"Skip writing, filename = {filename} exists.")
-    return True
+            yield (filename, raw_data, content_type)
 
 
-def process_multipart_data(data: bytes, boundary: str, index: int, extract=False, base64_encoded=False) -> bool:
+def process_multipart_data(data: bytes, boundary: str, index: int, extract=False, base64_encoded=False) -> Generator[tuple[str, bytes, str], None, None]:
     """Processes a data (optionally encoded in base64)."""
     decoded_data = base64_decode_content(data, base64_encoded)
 
     if extract and decoded_data:
         boundary_bytes = f"--{boundary}".encode("utf-8")
-        return extract_multipart_data(decoded_data, boundary_bytes, index)
-    else:
-        return False
+        for (output_filename, raw_data, content_type) in extract_multipart_data(decoded_data, boundary_bytes, index):
+            yield (output_filename, raw_data, content_type)
