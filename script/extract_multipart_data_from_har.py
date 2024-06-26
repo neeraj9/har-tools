@@ -154,7 +154,7 @@ def process_multipart_data(data: bytes, boundary: str, extract=False, base64_enc
 # Process functions
 # ----------------------------------------------------------------------------
 
-def filter_entries(entries_obj, filter_func=None):
+def filter_entries(entries_obj: dict, filter_func=None) -> Generator[tuple[str, str], None, None]:
     """
     Keys:
         _initiator
@@ -178,7 +178,7 @@ def filter_entries(entries_obj, filter_func=None):
                 yield (key, value)
 
 
-def process_har_file(filename):
+def process_har_file(filename: str) -> None:
     # default file format for .har is set to utf-8, to support them
     jsonobject = json.loads(open(filename, "r", encoding="utf-8").read())
     log_obj = jsonobject.get("log", {})
@@ -191,7 +191,7 @@ def process_har_file(filename):
 # ----------------------------------------------------------------------------
 
 
-def extract_filtered_multipart_data(entries_obj):
+def extract_filtered_multipart_data(entries_obj: dict) -> None:
     filter_fun = lambda key, value: key == "response" and filter_for_multipart_mixed_response(value)
     for (key, value) in filter_entries(entries_obj, filter_fun):
         content_type = ""
@@ -213,7 +213,7 @@ def extract_filtered_multipart_data(entries_obj):
 # ----------------------------------------------------------------------------
 
 
-def filter_for_multipart_mixed_response(value):
+def filter_for_multipart_mixed_response(value: dict) -> str:
     for header in value.get("headers", []):
         if header["name"] == "content-type":
             return header["value"].startswith("multipart/mixed;")
@@ -224,7 +224,7 @@ def filter_for_multipart_mixed_response(value):
 # ----------------------------------------------------------------------------
 
 
-def main():
+def main() -> int:
     har_filename = sys.argv[1]
     process_har_file(har_filename)
     return 0
