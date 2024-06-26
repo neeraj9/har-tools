@@ -116,7 +116,7 @@ def parse_content_disposition(content_disposition: str) -> Generator[tuple[str, 
             yield (key, value)
 
 
-def extract_multipart_data(decoded_data: bytes, boundary: bytes) -> bool:
+def extract_multipart_data(decoded_data: bytes, boundary: bytes, index: int) -> bool:
     count = 0
     for part in split_bytes_by_boundary(decoded_data, boundary):
         result = parse_part(part)
@@ -126,10 +126,10 @@ def extract_multipart_data(decoded_data: bytes, boundary: bytes) -> bool:
             if not extension:
                 extension = ".unknown"
             count += 1
-            filename = f"file-{count}{extension}"
+            filename = f"{index}_file-{count}{extension}"
             for (key, value) in parse_content_disposition(header.get("content-disposition", "")):
                 if key == "name":
-                    filename = replace_non_alphanumeric(value) + extension
+                    filename = f"{index}_{replace_non_alphanumeric(value)}{extension}"
                     break
             if not os.path.exists(filename):
                 open(filename, "wb").write(raw_data)
@@ -139,13 +139,13 @@ def extract_multipart_data(decoded_data: bytes, boundary: bytes) -> bool:
     return True
 
 
-def process_multipart_data(data: bytes, boundary: str, extract=False, base64_encoded=False) -> bool:
+def process_multipart_data(data: bytes, boundary: str, index: int, extract=False, base64_encoded=False) -> bool:
     """Processes a data (optionally encoded in base64)."""
     decoded_data = decode_content(data, base64_encoded)
 
     if extract and decoded_data:
         boundary_bytes = f"--{boundary}".encode("utf-8")
-        return extract_multipart_data(decoded_data, boundary_bytes)
+        return extract_multipart_data(decoded_data, boundary_bytes, index)
     else:
         return False
 
@@ -154,7 +154,7 @@ def process_multipart_data(data: bytes, boundary: str, extract=False, base64_enc
 # Process functions
 # ----------------------------------------------------------------------------
 
-def filter_entries(entries_obj: dict, filter_func=None) -> Generator[tuple[str, str], None, None]:
+def filter_entries(entries_obj: dict, filter_func=None) -> Generator[tuple[int, str, str], None, None]:
     """
     Keys:
         _initiator
@@ -169,13 +169,15 @@ def filter_entries(entries_obj: dict, filter_func=None) -> Generator[tuple[str, 
         time
         timings
     """
+    index = 0
     for item in entries_obj:
+        index += 1
         for key, value in item.items():
             if filter_func:
                 if filter_func(key, value):
-                    yield (key, value)
+                    yield (index, key, value)
             else:
-                yield (key, value)
+                yield (index, key, value)
 
 
 def process_har_file(filename: str) -> None:
@@ -193,7 +195,7 @@ def process_har_file(filename: str) -> None:
 
 def extract_filtered_multipart_data(entries_obj: dict) -> None:
     filter_fun = lambda key, value: key == "response" and filter_for_multipart_mixed_response(value)
-    for (key, value) in filter_entries(entries_obj, filter_fun):
+    for (index, key, value) in filter_entries(entries_obj, filter_fun):
         content_type = ""
         for header in value.get("headers", []):
             if header["name"] == "content-type":
@@ -204,7 +206,7 @@ def extract_filtered_multipart_data(entries_obj: dict) -> None:
         content_text = content.get("text", "")
         content_encoding = content.get("encoding", "")
         is_base64_encoding = (content_encoding == "base64")
-        process_multipart_data(content_text.encode("utf-8"), boundary, extract=True, base64_encoded=is_base64_encoding)
+        process_multipart_data(content_text.encode("utf-8"), boundary, index, extract=True, base64_encoded=is_base64_encoding)
 
 
 
