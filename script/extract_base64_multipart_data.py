@@ -32,7 +32,7 @@ mimetypes.add_type("image/jpg", ".jpg")
 # ----------------------------------------------------------------------------
 
 
-def replace_non_alphanumeric(text):
+def replace_non_alphanumeric(text: str) -> str:
     """Replaces non-alphanumeric characters with underscores in the given text."""
 
     # Compile the pattern once for efficiency
@@ -154,7 +154,7 @@ def process_multipart_data(data: bytes, boundary: str, extract=False, base64_enc
 # Process functions
 # ----------------------------------------------------------------------------
 
-def process_base64_multipart_data_file(filename, boundary):
+def process_base64_multipart_data_file(filename: str, boundary: str):
     data = open(filename, "rb").read()
     if data.startswith(b"data:multipart/mixed;base64,"):
             data = data[len(b"data:multipart/mixed;base64,"):]
@@ -166,7 +166,7 @@ def process_base64_multipart_data_file(filename, boundary):
 # ----------------------------------------------------------------------------
 
 
-def main():
+def main() -> int:
     boundary = sys.argv[1]
     filename = sys.argv[2]
     process_base64_multipart_data_file(filename, boundary)
